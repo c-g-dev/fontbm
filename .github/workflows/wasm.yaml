@@ -34,14 +34,20 @@ jobs:
         mkdir -p build
         SYSROOT="$EMSDK/upstream/emscripten/cache/sysroot"
         LIBDIR="${SYSROOT}/lib/wasm32-emscripten"
+
         emcmake cmake -S . -B build \
           -DCMAKE_BUILD_TYPE=Release \
           -DFREETYPE_INCLUDE_DIRS=${SYSROOT}/include/freetype2 \
           -DFREETYPE_LIBRARY=${LIBDIR}/libfreetype.a \
           -DPNG_PNG_INCLUDE_DIR=${SYSROOT}/include \
           -DPNG_LIBRARY=${LIBDIR}/libpng16.a \
-          -DCMAKE_CXX_FLAGS="-s ALLOW_MEMORY_GROWTH=1 -s FORCE_FILESYSTEM=1 -s EXIT_RUNTIME=1" \
-          -DFONTBM_SKIP_WIN32_CONSOLE=ON
+          -DFONTBM_SKIP_WIN32_CONSOLE=ON \
+          # ---------- all -s flags belong to the LINKER ----------
+          -DCMAKE_EXE_LINKER_FLAGS="
+              -s ALLOW_MEMORY_GROWTH=1
+              -s FORCE_FILESYSTEM=1
+              -s EXIT_RUNTIME=1
+              -s EXPORTED_RUNTIME_METHODS=['FS','callMain']"
 
     # 5. Build
     - name: Build
