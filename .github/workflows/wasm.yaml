@@ -42,7 +42,6 @@ jobs:
           -DPNG_PNG_INCLUDE_DIR=${SYSROOT}/include \
           -DPNG_LIBRARY=${LIBDIR}/libpng16.a \
           -DFONTBM_SKIP_WIN32_CONSOLE=ON \
-          # ---------- all -s flags belong to the LINKER ----------
           -DCMAKE_EXE_LINKER_FLAGS="
               -s ALLOW_MEMORY_GROWTH=1
               -s FORCE_FILESYSTEM=1
