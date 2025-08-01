@@ -31,17 +31,16 @@ jobs:
     # 4. Configure with explicit include / lib paths
     - name: Configure (CMake + emcmake)
       run: |
-        mkdir build
+        mkdir -p build
         SYSROOT="$EMSDK/upstream/emscripten/cache/sysroot"
-        emcmake cmake .. \
+        emcmake cmake -S . -B build \
           -DCMAKE_BUILD_TYPE=Release \
           -DFREETYPE_INCLUDE_DIRS=${SYSROOT}/include/freetype2 \
           -DFREETYPE_LIBRARY=${SYSROOT}/lib/libfreetype.a \
           -DPNG_PNG_INCLUDE_DIR=${SYSROOT}/include \
           -DPNG_LIBRARY=${SYSROOT}/lib/libpng16.a \
           -DCMAKE_CXX_FLAGS="-s ALLOW_MEMORY_GROWTH=1 -s FORCE_FILESYSTEM=1 -s EXIT_RUNTIME=1" \
-          -DFONTBM_SKIP_WIN32_CONSOLE=ON \
-          -B build
+          -DFONTBM_SKIP_WIN32_CONSOLE=ON
 
     # 5. Build
     - name: Build
