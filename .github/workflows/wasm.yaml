@@ -29,11 +29,11 @@ jobs:
         embuilder build freetype libpng
 
     # 4. Configure with explicit include / lib paths
-    - name: Configure (CMake + emcmake)
+  - name: Configure (CMake + emcmake)
       run: |
         mkdir -p build
         SYSROOT="$EMSDK/upstream/emscripten/cache/sysroot"
-        LIBDIR="${SYSROOT}/lib/wasm32-emscripten"
+        LIBDIR="$SYSROOT/lib/wasm32-emscripten"
 
         emcmake cmake -S . -B build \
           -DCMAKE_BUILD_TYPE=Release \
@@ -42,12 +42,8 @@ jobs:
           -DPNG_PNG_INCLUDE_DIR=${SYSROOT}/include \
           -DPNG_LIBRARY=${LIBDIR}/libpng16.a \
           -DFONTBM_SKIP_WIN32_CONSOLE=ON \
-          -DCMAKE_EXE_LINKER_FLAGS="
-              -s ALLOW_MEMORY_GROWTH=1
-              -s FORCE_FILESYSTEM=1
-              -s EXIT_RUNTIME=1
-              -s EXPORTED_RUNTIME_METHODS=['FS','callMain']"
-
+          -DCMAKE_EXE_LINKER_FLAGS="-s ALLOW_MEMORY_GROWTH=1 -s FORCE_FILESYSTEM=1 -s EXIT_RUNTIME=1 -s EXPORTED_RUNTIME_METHODS=['FS','callMain']"
+    
     # 5. Build
     - name: Build
       run: cmake --build build --parallel
