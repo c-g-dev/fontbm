@@ -1,66 +1,61 @@
 name: Build WebAssembly version of fontbm
 
 on:
-  push:            # run on every push to default branch
+  push:
     branches: [ main, master ]
-  pull_request:    # also run for PRs
-  workflow_dispatch:   # enable manual run from the UI
-
-  # OPTIONAL – create a release when you push a tag that starts with "wasm-"
-  # Uncomment the block below if you want automatic publishing
-  # release:
-  #   types: [ created ]
+  pull_request:
+  workflow_dispatch:
 
 jobs:
   build-wasm:
     runs-on: ubuntu-latest
 
     steps:
-    # 1. Get the code (include sub-modules for stb_rect_pack, etc.)
+    # 1. Checkout with sub-modules
     - uses: actions/checkout@v4
       with:
         submodules: recursive
 
-    # 2. Install Emscripten SDK (cached between runs)
+    # 2. Install / cache Emscripten
     - name: Set up Emscripten
-      uses: mymindstorm/setup-emsdk@v14   # maintained community action
+      uses: mymindstorm/setup-emsdk@v14
       with:
-        version: 3.1.56                   # pick any released version
+        version: 3.1.56
         actions-cache: true
 
-    # 3. Configure CMake for WebAssembly
+    # 3. Make sure the freetype & libpng ports exist in the cache
+    - name: Build sysroot libraries
+      run: |
+        embuilder build freetype libpng
+
+    # 4. Configure with explicit include / lib paths
     - name: Configure (CMake + emcmake)
       run: |
-        mkdir build && cd build
-        # disable the tiny Win-console helper that won't compile on non-Windows
+        mkdir build
+        SYSROOT="$EMSDK/upstream/emscripten/cache/sysroot"
         emcmake cmake .. \
           -DCMAKE_BUILD_TYPE=Release \
-          -D CMAKE_CXX_FLAGS="-s ALLOW_MEMORY_GROWTH=1 -s FORCE_FILESYSTEM=1 -s EXIT_RUNTIME=1" \
-          -D FONTBM_SKIP_WIN32_CONSOLE=ON
+          -DFREETYPE_INCLUDE_DIRS=${SYSROOT}/include/freetype2 \
+          -DFREETYPE_LIBRARY=${SYSROOT}/lib/libfreetype.a \
+          -DPNG_PNG_INCLUDE_DIR=${SYSROOT}/include \
+          -DPNG_LIBRARY=${SYSROOT}/lib/libpng16.a \
+          -DCMAKE_CXX_FLAGS="-s ALLOW_MEMORY_GROWTH=1 -s FORCE_FILESYSTEM=1 -s EXIT_RUNTIME=1" \
+          -DFONTBM_SKIP_WIN32_CONSOLE=ON \
+          -B build
 
-    # 4. Compile
+    # 5. Build
     - name: Build
       run: cmake --build build --parallel
 
-    # 5. Collect outputs
+    # 6. Collect outputs
     - name: Copy artifacts
       run: |
         mkdir dist
         cp build/fontbm.{js,wasm} dist/
 
-    # 6. Upload artifact so you can grab it from the Actions page
+    # 7. Upload artifact
     - name: Upload fontbm.wasm
       uses: actions/upload-artifact@v4
       with:
         name: fontbm-wasm
         path: dist
-
-    # 7. OPTIONAL – publish to gh-pages when a tag starting with 'wasm-' is pushed
-    #    (Remove this step if you don't need automatic Pages publishing.)
-    - name: Deploy to gh-pages   # runs only on tag events
-      if: startsWith(github.ref, 'refs/tags/wasm-')
-      uses: peaceiris/actions-gh-pages@v4
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_branch: gh-pages
-        publish_dir: dist
